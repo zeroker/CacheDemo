@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+
+    <settings>
+        <!--配置开启二级缓存的支持-->
+        <setting name="cacheEnabled" value="true"/>
+        <!--配置直接加载-->
+        <!--当设置为‘true’的时候，懒加载的对象可能被任何懒属性全部加载。否则，每个属性都按需加载-->
+        <setting name="aggressiveLazyLoading" value="false"/>
+    </settings>
+
+    <!--使用typeAliases,package配置别名，只能配置domain包下的实体类-->
+    <typeAliases>
+        <!--批量配置实体类别名，配置实体类所在的包-->
+        <package name="com.swu.domain"/>
+    </typeAliases>
+
+</configuration>

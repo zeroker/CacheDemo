@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans.xsd
+	http://www.springframework.org/schema/context
+	http://www.springframework.org/schema/context/spring-context.xsd
+	http://www.springframework.org/schema/aop
+	http://www.springframework.org/schema/aop/spring-aop.xsd
+	http://www.springframework.org/schema/tx
+	http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+    <!--配置要扫描的包-->
+    <context:component-scan base-package="com.swu"/>
+
+    <!--引入*.properties的配置文件-->
+    <context:property-placeholder location="classpath:*.properties"/>
+
+    <!--配置SqlMapConfig.xml相关开始-->
+    <!--配置SqlSessionFactory工厂-->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="configLocation" value="classpath:SqlMapConfig.xml"/>
+    </bean>
+    <!--配置IStudentDao接口所在包，映射文件位置-->
+    <bean id="mapperScanner" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="com.swu.dao"/>
+    </bean>
+
+    <!--配置数据源-->
+    <bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+        <property name="driverClass" value="${jdbc.driver}"/>
+        <!--配置要连接的数据库database-->
+        <property name="jdbcUrl" value="${jdbc.url}"/>
+        <property name="user" value="${jdbc.username}"/>
+        <!--配置要连接数据库的密码-->
+        <property name="password" value="${jdbc.password}"/>
+    </bean>
+
+    <!--配置声明式事务开始-->
+    <!--配置事务通知-->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    <tx:advice id="txAdviceMsg">
+        <tx:attributes>
+            <tx:method name="save*" propagation="REQUIRED"/>
+            <tx:method name="update*" propagation="REQUIRED"/>
+            <tx:method name="delete*" propagation="REQUIRED"/>
+            <tx:method name="find*" read-only="true"/>
+            <tx:method name="*" propagation="REQUIRED"/>
+        </tx:attributes>
+    </tx:advice>
+    <!--配置通知类-->
+    <bean id="txAdvice" class="com.swu.aspectj.AspectjDemo"/>
+    <!--配置AOP切面-->
+    <aop:config>
+        <!--配置通用切入点表达式-->
+        <aop:pointcut id="pt1" expression="execution(* com.swu.service.impl.*.find*(..))"/>
+        <aop:advisor advice-ref="txAdviceMsg" pointcut-ref="pt1"/>
+        <aop:aspect id="txAspect" ref="txAdvice">
+            <aop:around method="aspectjFun" pointcut-ref="pt1"/>
+        </aop:aspect>
+    </aop:config>
+
+    <!-- 配置JedisPoolConfig实例 -->
+    <bean id="poolConfig" class="redis.clients.jedis.JedisPoolConfig">
+        <property name="maxIdle" value="${redis.maxIdle}"/>
+        <property name="maxTotal" value="${redis.maxActive}"/>
+        <property name="maxWaitMillis" value="${redis.maxWait}"/>
+    </bean>
+
+    <!-- 配置JedisConnectionFactory -->
+    <bean id="jedisConnectionFactory"
+          class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory">
+        <property name="hostName" value="${redis.host}"/>
+        <property name="port" value="${redis.port}"/>
+        <!--<property name="password" value="${redis.pass}" /> -->
+        <property name="database" value="${redis.dbIndex}"/>
+        <property name="poolConfig" ref="poolConfig"/>
+    </bean>
+
+    <bean id="strSeri" class="org.springframework.data.redis.serializer.StringRedisSerializer"/>
+
+    <!-- 配置RedisTemplate -->
+    <bean id="redisTemplate" class="org.springframework.data.redis.core.RedisTemplate">
+        <property name="connectionFactory" ref="jedisConnectionFactory"/>
+        <!-- 解决key乱码 -->
+        <property name="keySerializer" ref="strSeri"/>
+        <property name="valueSerializer" ref="strSeri"/>
+    </bean>
+
+    <!--开启对事务的支持-->
+    <tx:annotation-driven/>
+    <!--配置声明式事务结束-->
+
+    <!--开启spring注解的支持-->
+    <context:annotation-config/>
+
+
+</beans>
